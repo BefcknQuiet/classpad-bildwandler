@@ -38,7 +38,8 @@ Weitergeben: Auf der Seite unten auf **Link teilen** tippen oder den QR-Code vom
 1. ClassPad per USB anschließen und am ClassPad **USB Flash** wählen.
 2. Die `.c2p`-Datei aus dem Ordner *Downloads* auf das ClassPad-Laufwerk kopieren.
    - Windows: Das Laufwerk steht im Explorer unter **Dieser PC**.
-   - Android: mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App.
+   - Android: mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App. Antippen lässt sich die
+     `.c2p` am Handy nicht (Samsung meldet „Fehler aufgetreten“), das ist normal: Nur der ClassPad kann sie lesen.
 3. Laufwerk auswerfen (Windows: im Explorer Rechtsklick → **Auswerfen**), dann das Kabel trennen.
 4. Das Bild z. B. in **Picture Plot** über Datei → Öffnen laden.
 

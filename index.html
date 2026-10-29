@@ -222,7 +222,7 @@ header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
       <li>Laufwerk auswerfen (Windows: im Explorer Rechtsklick → <b>Auswerfen</b>), dann das Kabel trennen. Der ClassPad übernimmt die Datei.</li>
       <li>Das Bild z. B. in <b>Picture Plot</b> über Datei → Öffnen laden.</li>
     </ol>
-    <p>Am Android-Handy geht es genauso mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App. Die <span class="mono">.c2p</span>-Dateien liegen dort unter <b>Downloads</b>. Dateinamen am besten kurz und ohne Umlaute; die App wandelt ä, ö, ü und Leerzeichen automatisch um.</p>
+    <p>Am Android-Handy geht es genauso mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App. Die <span class="mono">.c2p</span>-Dateien liegen dort unter <b>Downloads</b>. Antippen lassen sie sich am Handy nicht („Fehler aufgetreten“), das ist normal: Nur der ClassPad kann sie lesen. Dateinamen am besten kurz und ohne Umlaute; die App wandelt ä, ö, ü und Leerzeichen automatisch um.</p>
     <p id="zipnote" hidden>Hier in Claude speichert der Browser nur ZIP-Dateien. Die ZIP vor dem Kopieren entpacken, drin liegt die <span class="mono">.c2p</span>-Datei.</p>
   </section>
 
@@ -470,7 +470,10 @@ async function save(list) {
     if (i) await new Promise(r => setTimeout(r, 400));
     saveBlob(new Blob([files[i].data], { type: "application/octet-stream" }), files[i].name);
   }
-  setStatus(files.length === 1 ? `${files[0].name} gespeichert.` : `${files.length} .c2p-Dateien gespeichert.`, "ok");
+  const one = files.length === 1;
+  // Android-Dateimanager kennen .c2p nicht und melden beim Antippen einen Fehler
+  const hint = /Android/.test(navigator.userAgent) ? ` Am Handy ${one ? "lässt sie" : "lassen sie"} sich nicht öffnen, das ist normal: nur der ClassPad kann .c2p lesen.` : "";
+  setStatus((one ? `${files[0].name} gespeichert` : `${files.length} .c2p-Dateien gespeichert`) + ", meist im Ordner Downloads." + hint, "ok");
 }
 
 // ---------- Oberfläche ----------
