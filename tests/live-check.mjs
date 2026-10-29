@@ -161,6 +161,7 @@ console.log(failed ? `\n${failed} Prüfung(en) fehlgeschlagen.` : "\nAlles in Or
 if (process.env.GITHUB_ACTIONS) { // als Annotation, damit das Ergebnis direkt am Lauf steht
   const esc = t => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
   const lines = results.map(r => `${r.pass ? "OK" : "FEHLER"}  ${r.name}${r.detail ? ` (${r.detail})` : ""}`).join("\n");
-  console.log(`::${failed ? "error" : "notice"} title=Live-Check ${LABEL} ${failed ? `${failed} Fehler` : "bestanden"}::${esc(lines)}`);
+  const title = esc(`Live-Check ${LABEL} ${failed ? `${failed} Fehler` : "bestanden"}`).replace(/,/g, "%2C").replace(/:/g, "%3A");
+  console.log(`::${failed ? "error" : "notice"} title=${title}::${esc(lines)}`);
 }
 process.exit(failed ? 1 : 0);
