@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="de">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ClassPad Bildwandler</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,7 +52,7 @@ header h1 {
 header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
 .mono { font-family: var(--font-mono); font-size: 0.85em; font-variant-numeric: tabular-nums; }
 .bench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 24px; align-items: start; }
-@media (max-width: 820px) { .bench { grid-template-columns: minmax(0, 1fr); } .display { order: -1; } }
+@media (max-width: 820px) { .bench { grid-template-columns: minmax(0, 1fr); } .display { order: -1; position: static; } }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 16px; min-width: 0; }
 .label { font-family: var(--font-display); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
 
@@ -71,7 +72,7 @@ header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
 .btn:focus-visible, input:focus-visible, select:focus-visible, .seg label:focus-within { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
 
 .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-.opt { display: grid; gap: 6px; min-width: 0; }
+.opt { display: grid; gap: 6px; min-width: 0; align-content: start; }
 .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg label { flex: 1; text-align: center; padding: 8px 6px; cursor: pointer; font-size: 0.92rem; border-left: 1px solid var(--line); user-select: none; }
 .seg label:first-child { border-left: 0; }
@@ -434,7 +435,7 @@ const $ = id => document.getElementById(id);
 
 function setStatus(text, kind) { const s = $("status"); s.textContent = text; s.className = "status" + (kind ? " " + kind : ""); }
 
-function kb(n) { return n < 1024 ? n + " B" : (n / 1024).toFixed(n < 10240 ? 1 : 0).replace(".", ",") + " KB"; }
+function kb(n) { return n < 1024 ? n + "\u00a0B" : (n / 1024).toFixed(n < 10240 ? 1 : 0).replace(".", ",") + "\u00a0KB"; }
 
 const DL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>';
 
@@ -462,7 +463,7 @@ function drawList() {
     const ext = document.createElement("span"); ext.textContent = ".c2p";
     nm.append(inp, ext);
     const info = document.createElement("div"); info.className = "info mono";
-    info.textContent = it.error ? it.error : it.bytes ? `${it.w} × ${it.h} px · ${kb(it.bytes.length)}` : "wird umgewandelt …";
+    info.textContent = it.error ? it.error : it.bytes ? `${it.w}\u00a0×\u00a0${it.h}\u00a0px · ${kb(it.bytes.length)}` : "wird umgewandelt …";
     if (it.error) info.classList.add("warn");
     if (it.sample) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "Beispiel"; info.append(t); }
     meta.append(nm, info);
@@ -484,14 +485,19 @@ function drawList() {
   updateLabels();
 }
 
+function fitBig() {
+  const big = $("big"), lcd = big.parentElement;
+  if (!selected || !selected.preview) return;
+  const scale = Math.min(lcd.clientWidth / selected.w, lcd.clientHeight / selected.h);
+  big.style.width = Math.floor(selected.w * scale) + "px"; big.style.height = Math.floor(selected.h * scale) + "px";
+}
+
 function select(it) {
   selected = it;
   const big = $("big"), ctx = big.getContext("2d");
   if (it && it.preview) {
     big.width = it.w; big.height = it.h;
-    const lcd = big.parentElement;
-    const scale = Math.min(lcd.clientWidth / it.w, lcd.clientHeight / it.h);
-    big.style.width = Math.floor(it.w * scale) + "px"; big.style.height = Math.floor(it.h * scale) + "px";
+    fitBig();
     ctx.drawImage(it.preview, 0, 0);
     $("dims").textContent = `${it.w} × ${it.h}`;
   } else {
@@ -531,12 +537,16 @@ async function addFiles(fileList) {
   if (!ok.length) { setStatus("Bitte JPG- oder PNG-Dateien wählen.", "err"); return; }
   const sample = items.find(i => i.sample);
   if (sample) items.splice(items.indexOf(sample), 1);
-  const added = [];
+  const added = [], failed = [];
   for (const f of ok) {
     try { const img = await loadImage(f); const it = { id: nextId++, name: cleanName(f.name), img }; items.push(it); added.push(it); }
-    catch { setStatus(`${f.name} ließ sich nicht öffnen.`, "err"); }
+    catch { failed.push(f.name); }
   }
-  if (added.length) { selected = added[0]; drawList(); await process(added); setStatus(`${added.length} ${added.length === 1 ? "Bild" : "Bilder"} umgewandelt.`, "ok"); }
+  if (added.length) { selected = added[0]; drawList(); await process(added); }
+  const done = added.filter(i => i.bytes).length;
+  const msg = done ? `${done} ${done === 1 ? "Bild" : "Bilder"} umgewandelt.` : "";
+  if (failed.length) setStatus(`${msg} ${failed.join(", ")} ließ sich nicht öffnen.`.trim(), "err");
+  else if (msg) setStatus(msg, "ok");
 }
 
 // Beispielbild: eine Funktion auf Karopapier, damit die Vorschau beim Öffnen etwas zeigt
@@ -577,7 +587,7 @@ document.querySelectorAll(".opts input").forEach(inp => inp.addEventListener("ch
   process(items);
 }));
 $("all").addEventListener("click", () => save(items.filter(i => i.bytes)));
-window.addEventListener("resize", () => select(selected));
+window.addEventListener("resize", fitBig);
 
 if (!("CompressionStream" in window)) {
   setStatus("Dieser Browser ist zu alt. Bitte Chrome, Edge, Firefox oder Safari aktuell verwenden.", "err");
