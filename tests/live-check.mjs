@@ -149,4 +149,9 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Live-Check ${BASE}\n\n` + results.map(r => `- ${r.pass ? "✅" : "❌"} ${r.name}${r.detail ? ` (${r.detail})` : ""}`).join("\n") + "\n");
 }
 console.log(failed ? `\n${failed} Prüfung(en) fehlgeschlagen.` : "\nAlles in Ordnung.");
+if (process.env.GITHUB_ACTIONS) { // als Annotation, damit das Ergebnis direkt am Lauf steht
+  const esc = t => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  const lines = results.map(r => `${r.pass ? "OK" : "FEHLER"}  ${r.name}${r.detail ? ` (${r.detail})` : ""}`).join("\n");
+  console.log(`::${failed ? "error" : "notice"} title=Live-Check ${failed ? `${failed} Fehler` : "bestanden"}::${esc(lines)}`);
+}
 process.exit(failed ? 1 : 0);
