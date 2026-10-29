@@ -4,8 +4,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ClassPad Bildwandler</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<meta name="description" content="Wandelt JPG- und PNG-Bilder in .c2p-Dateien für den CASIO ClassPad II (fx-CP400) um. Läuft offline im Browser.">
+<meta name="theme-color" content="#e9edf3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d131c" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Werkbank: links Bilder + Einstellungen, rechts das Display des ClassPad als Vorschau; am Handy untereinander */
 :root {
@@ -181,7 +186,7 @@ header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
 
       <div class="bar">
         <p class="status" id="status" role="status"></p>
-        <button class="btn" id="all" type="button">Alle als ZIP speichern</button>
+        <button class="btn" id="all" type="button">Speichern</button>
       </div>
     </div>
 
@@ -202,7 +207,8 @@ header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
       <li>Laufwerk auswerfen bzw. Kabel trennen. Der ClassPad übernimmt die Datei.</li>
       <li>Das Bild z. B. in <b>Picture Plot</b> über Datei → Öffnen laden.</li>
     </ol>
-    <p>Am Android-Handy geht es genauso mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App. Dateinamen am besten kurz und ohne Umlaute; die App wandelt ä, ö, ü und Leerzeichen automatisch um.</p>
+    <p>Am Android-Handy geht es genauso mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App. Die <span class="mono">.c2p</span>-Dateien liegen dort unter <b>Downloads</b>. Dateinamen am besten kurz und ohne Umlaute; die App wandelt ä, ö, ü und Leerzeichen automatisch um.</p>
+    <p>Tipp: In Chrome über das Menü <b>Zum Startbildschirm hinzufügen</b> bzw. <b>App installieren</b> wählen. Dann startet der Bildwandler wie eine App und funktioniert auch ohne Internet.</p>
     <p id="zipnote" hidden>Hier in Claude speichert der Browser nur ZIP-Dateien. Die ZIP vor dem Kopieren entpacken, drin liegt die <span class="mono">.c2p</span>-Datei.</p>
   </section>
 </div>
@@ -386,6 +392,7 @@ function makeZip(files) {
 }
 
 // ---------- Speichern: im Browser direkt .c2p, in Claude als ZIP ----------
+const PAGE_URL = "befcknquiet.github.io/classpad-bildwandler";
 let downloads = null;
 const inClaude = !!(window.claude && typeof window.claude.use === "function");
 if (inClaude) {
@@ -419,13 +426,17 @@ async function save(list) {
       setStatus(`${zipName} gespeichert. Entpacken, dann auf den ClassPad kopieren.`, "ok");
     } catch (e) {
       if (e && e.code === "declined") setStatus("Speichern abgebrochen.");
-      else setStatus("Speichern ging hier nicht (" + (e && e.code || "unbekannt") + "). Öffne die Datei c2p-konverter.html direkt im Browser.", "err");
+      else setStatus("Speichern ging hier nicht (" + (e && e.code || "unbekannt") + "). Öffne " + PAGE_URL + " direkt im Browser.", "err");
     }
     return;
   }
-  if (inClaude) { setStatus("In dieser Ansicht ist Speichern nicht möglich. Öffne die Datei c2p-konverter.html direkt im Browser.", "err"); return; }
-  if (files.length === 1) { saveBlob(new Blob([files[0].data], { type: "application/octet-stream" }), files[0].name); setStatus(`${files[0].name} gespeichert.`, "ok"); }
-  else { saveBlob(makeZip(files), "classpad-bilder.zip"); setStatus(`${files.length} Dateien als classpad-bilder.zip gespeichert.`, "ok"); }
+  if (inClaude) { setStatus("In dieser Ansicht ist Speichern nicht möglich. Öffne " + PAGE_URL + " direkt im Browser.", "err"); return; }
+  // Jede Datei einzeln als .c2p; kurze Pause, damit der Browser keinen Download verschluckt
+  for (let i = 0; i < files.length; i++) {
+    if (i) await new Promise(r => setTimeout(r, 400));
+    saveBlob(new Blob([files[i].data], { type: "application/octet-stream" }), files[i].name);
+  }
+  setStatus(files.length === 1 ? `${files[0].name} gespeichert.` : `${files.length} .c2p-Dateien gespeichert.`, "ok");
 }
 
 // ---------- Oberfläche ----------
@@ -440,7 +451,7 @@ function kb(n) { return n < 1024 ? n + "\u00a0B" : (n / 1024).toFixed(n < 10240 
 const DL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>';
 
 function updateLabels() {
-  $("all").textContent = downloads || items.length > 1 ? "Alle als ZIP speichern" : "Speichern";
+  $("all").textContent = downloads ? "Alle als ZIP speichern" : items.length > 1 ? "Alle speichern" : "Speichern";
   $("zipnote").hidden = !downloads;
   document.querySelectorAll(".icon.dl").forEach(b => b.title = downloads ? "Als ZIP speichern" : "Als .c2p speichern");
   $("all").disabled = !items.some(i => i.bytes);
@@ -594,5 +605,10 @@ if (!("CompressionStream" in window)) {
 } else {
   items.push({ id: nextId++, name: "beispiel", img: sampleImage(), sample: true });
   process(items);
+}
+
+// Offline und vom Homescreen: Service Worker (nur über https bzw. localhost, nicht in Claude)
+if ("serviceWorker" in navigator && !inClaude && /^(https:|http:\/\/localhost)/.test(location.href)) {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(e => console.warn("Service Worker:", e)));
 }
 </script>

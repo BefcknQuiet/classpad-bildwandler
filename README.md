@@ -1,25 +1,38 @@
 # ClassPad Bildwandler
 
 Wandelt JPG- und PNG-Bilder in `.c2p`-Dateien für den CASIO ClassPad II (fx-CP400) um.
-Läuft komplett im Browser (PC und Android), eine einzige Datei: `c2p-konverter.html`.
+Läuft komplett im Browser (PC und Android), auch offline.
+
+**Seite:** https://befcknquiet.github.io/classpad-bildwandler/
+
+Am Android-Handy in Chrome öffnen und über das Menü „App installieren“ bzw. „Zum Startbildschirm hinzufügen“
+wählen. Danach startet der Bildwandler wie eine App und braucht kein Internet mehr.
+
+## Dateien
+
+- `index.html`: der ganze Konverter (früher `c2p-konverter.html`)
+- `manifest.webmanifest`, `sw.js`, `icons/`: PWA (Homescreen, offline). Bei Änderungen an der Dateiliste
+  in `sw.js` die `VERSION` hochzählen. Neue Fassungen lädt die App im Hintergrund, sie gelten ab dem nächsten Start.
+- `fonts/`: Barlow, Barlow Semi Condensed und IBM Plex Mono (lateinischer Teil, SIL OFL 1.1, siehe `fonts/OFL.txt`),
+  lokal statt von Google Fonts, damit die Seite offline gleich aussieht
 
 ## Stand (29.10.2026)
 
-- `c2p-konverter.html` ist geschrieben, aber **noch nicht getestet** (weder im Browser noch auf dem Rechner).
 - Funktionen: mehrere Bilder auswählen / ziehen / einfügen, Größe (Einpassen, Füllen, Original),
   Hintergrund für Transparenz, Querformat drehen, Dithering, Vorschau im ClassPad-Display (echte RGB565-Pixel),
-  Dateinamen bearbeiten (Umlaute/Leerzeichen werden umgewandelt), Speichern als `.c2p` oder mehrere als ZIP.
-- Wenn die Seite als claude.ai-Artifact läuft, speichert sie über die `downloads`-Capability als ZIP
-  (`.c2p` steht nicht auf der Endungs-Allowlist). Im normalen Browser wird die `.c2p` direkt heruntergeladen.
+  Dateinamen bearbeiten (Umlaute/Leerzeichen werden umgewandelt).
+- Speichern: Jede Datei wird direkt als `.c2p` heruntergeladen, auch bei „Alle speichern“ (kein ZIP).
+  Nur wenn die Seite als claude.ai-Artifact läuft, speichert sie als ZIP (`.c2p` steht dort nicht auf der Endungs-Allowlist).
+- Geprüft (Headless-Chromium, Desktop 1280 px und Pixel-7-Emulation, hell und dunkel):
+  - Header und Footer byte-gleich mit `getHeader`/`getFooter` aus heheleo/c2p (`src/util.ts`),
+    zlib-Daten entpackbar, Länge = Breite × Höhe × 2, bei 1:1-Bildern ohne Glätten jedes Pixel gleich einer
+    unabhängigen RGB565-Rechnung (Runden auf 5/6/5 Bit).
+  - Konsole ohne Fehler und Warnungen, kein horizontales Scrollen am Handy.
+  - PWA laut Chrome installierbar, Service Worker cacht alle 16 Dateien, Seite lädt und wandelt offline um.
 
 ## Offen
 
-1. Ausgabe prüfen: Header/Footer byte-genau gegen die Referenz (`getHeader`/`getFooter` aus heheleo/c2p `src/util.ts`)
-   vergleichen, zlib-Daten entpacken, Länge = Breite × Höhe × 2 prüfen.
-2. Seite im Browser durchklicken (Desktop + Handybreite, hell/dunkel), Konsole auf Fehler prüfen.
-3. Für Android erreichbar machen: z. B. GitHub Pages oder Cloudflare Pages (dann direkter `.c2p`-Download ohne ZIP),
-   optional als PWA (Manifest + Service Worker), damit es offline und vom Homescreen läuft.
-4. Auf einem echten ClassPad testen.
+1. Auf einem echten ClassPad testen.
 
 ## Das .c2p-Format
 
