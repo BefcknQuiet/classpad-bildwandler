@@ -1,0 +1,20 @@
+name: Live-Check
+# Prüft nach jeder Veröffentlichung die echte Seite auf GitHub Pages wie ein Android-Handy:
+# Dateien online, installierbar, offline, .c2p-Dateien byte-genau.
+on:
+  page_build:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save --no-package-lock playwright@1.63.0
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/live-check.mjs https://befcknquiet.github.io/classpad-bildwandler/

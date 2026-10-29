@@ -58,6 +58,11 @@ Mit Headless-Chromium, Desktop 1280 px und Pixel-7-Emulation, hell und dunkel:
   unabhängigen RGB565-Rechnung (Runden auf 5/6/5 Bit).
 - Konsole ohne Fehler und Warnungen, kein horizontales Scrollen am Handy.
 - PWA laut Chrome installierbar, Service Worker cacht alle Dateien, Seite lädt und wandelt offline um.
+- **Live-Check** (`.github/workflows/live-check.yml`, `tests/live-check.mjs`): läuft nach jeder Veröffentlichung auf
+  GitHub und prüft die echte Seite mit Pixel-7-Emulation: alle Dateien online und identisch mit dem Repo,
+  installierbar, offline nutzbar, „Alle speichern“ liefert einzelne `.c2p`, und deren Header, Footer, zlib-Daten
+  und jedes Pixel stimmen. Von Hand: Actions → Live-Check → *Run workflow*, oder lokal
+  `npm i playwright && node tests/live-check.mjs <URL>`.
 - Noch offen: Test auf einem echten ClassPad.
 
 ### Das .c2p-Format
