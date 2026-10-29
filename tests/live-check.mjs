@@ -3,7 +3,9 @@
 // Braucht nur Playwright (npm i playwright). Läuft auch gegen einen lokalen Server.
 // DEVICE: Playwright-Gerät (Standard „Pixel 7“) oder „desktop“; BROWSER_CHANNEL: z. B. msedge oder chrome.
 import { chromium, devices } from "playwright";
-import { readFileSync, appendFileSync } from "node:fs";
+import { readFileSync, appendFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { deflateSync, inflateSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
@@ -13,7 +15,7 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const WAIT_MIN = Number(process.env.WAIT_MIN || 10);
 const DEVICE = process.env.DEVICE || "Pixel 7";
 const LABEL = process.env.LABEL || DEVICE;
-const CONTEXT = DEVICE === "desktop" ? { viewport: { width: 1366, height: 768 } } : devices[DEVICE];
+const { defaultBrowserType, ...CONTEXT } = DEVICE === "desktop" ? { viewport: { width: 1366, height: 768 } } : devices[DEVICE];
 const results = [];
 const ok = (name, pass, detail = "") => { results.push({ name, pass, detail }); console.log(`${pass ? "OK    " : "FEHLER"} ${name}${detail ? " – " + detail : ""}`); };
 const sha = b => createHash("sha256").update(b).digest("hex");
@@ -98,11 +100,11 @@ function checkC2P(buf, img) {
 }
 
 // ---------- 2. Im Browser wie auf einem Android-Handy ----------
-const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || undefined });
+// Normales Profil statt Inkognito: Chrome und Edge bieten im Inkognito-Modus keine Installation an
+const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), "live-check-")),
+  { ...CONTEXT, acceptDownloads: true, channel: process.env.BROWSER_CHANNEL || undefined });
 try {
-  ok(`Browser: ${process.env.BROWSER_CHANNEL || "chromium"} ${browser.version()}, ${DEVICE}`, true);
-  const ctx = await browser.newContext({ ...CONTEXT, acceptDownloads: true });
-  const page = await ctx.newPage();
+  const page = ctx.pages()[0] || await ctx.newPage();
   const logs = [];
   page.on("console", m => { if (["error", "warning"].includes(m.type())) logs.push(m.text()); });
   page.on("pageerror", e => logs.push("pageerror: " + e.message));
@@ -116,8 +118,9 @@ try {
   await page.reload();
   ok("Service Worker steuert die Seite", await page.evaluate(() => !!navigator.serviceWorker.controller));
   const cdp = await ctx.newCDPSession(page);
+  ok(`Browser: ${(await cdp.send("Browser.getVersion")).product}, ${DEVICE}`, true);
   const { installabilityErrors } = await cdp.send("Page.getInstallabilityErrors");
-  ok("Chrome: als App installierbar", !installabilityErrors.length, installabilityErrors.map(e => e.errorId).join(", "));
+  ok("Als App installierbar", !installabilityErrors.length, installabilityErrors.map(e => e.errorId).join(", "));
 
   await ctx.setOffline(true);
   await page.reload();
@@ -147,7 +150,7 @@ try {
 } catch (e) {
   ok("Browser-Test", false, e.message.split("\n")[0]);
 } finally {
-  await browser.close();
+  await ctx.close();
 }
 
 const failed = results.filter(r => !r.pass).length;
