@@ -1,3 +1,6 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
 <title>ClassPad Bildwandler</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -348,7 +351,7 @@ async function render(item, opt) {
 function cleanName(raw) {
   let s = raw.replace(/\.[^.]+$/, "")
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/Ä/g, "Ae").replace(/Ö/g, "Oe").replace(/Ü/g, "Ue").replace(/ß/g, "ss")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, "_").replace(/[^A-Za-z0-9_\-]/g, "").replace(/_+/g, "_").replace(/^[_-]+|[_-]+$/g, "");
   return s.slice(0, 24) || "bild";
 }
