@@ -217,9 +217,9 @@ header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
   <section class="panel how">
     <p class="label">So kommt das Bild auf den ClassPad</p>
     <ol>
-      <li>ClassPad per USB-Kabel anschließen und am Rechner <b>USB Flash</b> wählen.</li>
-      <li>Die <span class="mono">.c2p</span>-Datei auf das ClassPad-Laufwerk kopieren.</li>
-      <li>Laufwerk auswerfen bzw. Kabel trennen. Der ClassPad übernimmt die Datei.</li>
+      <li>ClassPad per USB-Kabel anschließen und am ClassPad <b>USB Flash</b> wählen.</li>
+      <li>Die <span class="mono">.c2p</span>-Datei aus dem Ordner <b>Downloads</b> auf das ClassPad-Laufwerk kopieren. Unter Windows steht es im Explorer unter <b>Dieser PC</b>.</li>
+      <li>Laufwerk auswerfen (Windows: im Explorer Rechtsklick → <b>Auswerfen</b>), dann das Kabel trennen. Der ClassPad übernimmt die Datei.</li>
       <li>Das Bild z. B. in <b>Picture Plot</b> über Datei → Öffnen laden.</li>
     </ol>
     <p>Am Android-Handy geht es genauso mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App. Die <span class="mono">.c2p</span>-Dateien liegen dort unter <b>Downloads</b>. Dateinamen am besten kurz und ohne Umlaute; die App wandelt ä, ö, ü und Leerzeichen automatisch um.</p>
@@ -227,14 +227,14 @@ header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
   </section>
 
   <section class="panel" id="weitergeben">
-    <p class="label">Als App aufs Handy holen und weitergeben</p>
+    <p class="label">Als App installieren und weitergeben</p>
     <div class="share">
       <figure class="qr"><img src="icons/qr.svg" width="156" height="156" alt="QR-Code mit dem Link zum Bildwandler"></figure>
       <div>
         <ol>
           <li>QR-Code mit der Handy-Kamera scannen oder den Link öffnen:<br><a class="link mono" href="https://befcknquiet.github.io/classpad-bildwandler/">befcknquiet.github.io/classpad-bildwandler</a></li>
           <li id="step-install">In Chrome oben auf <b>App installieren</b> tippen. Ist der Knopf nicht da: Menü <b>⋮</b> → <b>App installieren</b> bzw. <b>Zum Startbildschirm hinzufügen</b>.</li>
-          <li>Fertig. Der Bildwandler liegt auf dem Startbildschirm und läuft auch ohne Internet.</li>
+          <li id="step-done">Fertig. Der Bildwandler liegt auf dem Startbildschirm und läuft auch ohne Internet.</li>
         </ol>
         <div class="acts-row">
           <button class="btn ghost" id="share" type="button">Link teilen</button>
@@ -392,7 +392,9 @@ function cleanName(raw) {
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/Ä/g, "Ae").replace(/Ö/g, "Oe").replace(/Ü/g, "Ue").replace(/ß/g, "ss")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, "_").replace(/[^A-Za-z0-9_\-]/g, "").replace(/_+/g, "_").replace(/^[_-]+|[_-]+$/g, "");
-  return s.slice(0, 24) || "bild";
+  s = s.slice(0, 24) || "bild";
+  // Gerätenamen wie CON oder NUL sind unter Windows als Dateiname gesperrt
+  return /^(con|prn|aux|nul|com\d|lpt\d)$/i.test(s) ? s + "_bild" : s;
 }
 
 // ---------- ZIP (ungepackt, für den Download in Claude) ----------
@@ -652,6 +654,10 @@ $("install").addEventListener("click", async () => {
   await evt.userChoice.catch(() => {});
 });
 if (/iPhone|iPad|iPod/.test(navigator.userAgent)) $("step-install").innerHTML = "In Safari unten auf <b>Teilen</b> und dann <b>Zum Home-Bildschirm</b> tippen.";
+else if (!/Android/.test(navigator.userAgent)) { // PC
+  $("step-install").innerHTML = "Am PC in Chrome oder Edge oben auf <b>App installieren</b> klicken oder rechts in der Adressleiste auf das Installieren-Symbol. In Edge geht es auch über Menü <b>…</b> → <b>Apps</b> → <b>Diese Website als App installieren</b>.";
+  $("step-done").textContent = "Fertig. Der Bildwandler steht im Startmenü, lässt sich an die Taskleiste anheften und läuft auch ohne Internet.";
+}
 $("share").addEventListener("click", async () => {
   const st = $("share-state");
   try {

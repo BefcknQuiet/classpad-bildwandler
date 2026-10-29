@@ -1,6 +1,7 @@
-// Live-Check: prüft die veröffentlichte Seite wie ein Android-Handy.
+// Live-Check: prüft die veröffentlichte Seite im Browser.
 //   node tests/live-check.mjs https://befcknquiet.github.io/classpad-bildwandler/
 // Braucht nur Playwright (npm i playwright). Läuft auch gegen einen lokalen Server.
+// DEVICE: Playwright-Gerät (Standard „Pixel 7“) oder „desktop“; BROWSER_CHANNEL: z. B. msedge oder chrome.
 import { chromium, devices } from "playwright";
 import { readFileSync, appendFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -10,6 +11,9 @@ import { fileURLToPath } from "node:url";
 const BASE = (process.argv[2] || "https://befcknquiet.github.io/classpad-bildwandler/").replace(/\/?$/, "/");
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const WAIT_MIN = Number(process.env.WAIT_MIN || 10);
+const DEVICE = process.env.DEVICE || "Pixel 7";
+const LABEL = process.env.LABEL || DEVICE;
+const CONTEXT = DEVICE === "desktop" ? { viewport: { width: 1366, height: 768 } } : devices[DEVICE];
 const results = [];
 const ok = (name, pass, detail = "") => { results.push({ name, pass, detail }); console.log(`${pass ? "OK    " : "FEHLER"} ${name}${detail ? " – " + detail : ""}`); };
 const sha = b => createHash("sha256").update(b).digest("hex");
@@ -57,6 +61,7 @@ const grad = (x, y) => [x, (x * 3 + y * 5) % 256, 255 - x];
 const IMAGES = [
   { name: "quadranten.png", w: 40, h: 30, at: quad },
   { name: "verlauf.png", w: 256, h: 64, at: grad },
+  { name: "con.png", w: 3, h: 2, at: (x, y) => [x * 80, y * 120, 200], expect: "con_bild.c2p" }, // unter Windows gesperrter Name
 ];
 
 // ---------- .c2p-Prüfung nach der Formatbeschreibung (README) ----------
@@ -93,9 +98,10 @@ function checkC2P(buf, img) {
 }
 
 // ---------- 2. Im Browser wie auf einem Android-Handy ----------
-const browser = await chromium.launch();
+const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || undefined });
 try {
-  const ctx = await browser.newContext({ ...devices["Pixel 7"], acceptDownloads: true });
+  ok(`Browser: ${process.env.BROWSER_CHANNEL || "chromium"} ${browser.version()}, ${DEVICE}`, true);
+  const ctx = await browser.newContext({ ...CONTEXT, acceptDownloads: true });
   const page = await ctx.newPage();
   const logs = [];
   page.on("console", m => { if (["error", "warning"].includes(m.type())) logs.push(m.text()); });
@@ -104,7 +110,7 @@ try {
   await page.goto(BASE);
   await page.waitForSelector(".file .icon.dl:not([disabled])", { timeout: 20000 });
   ok("Seite lädt, Beispielbild wird umgewandelt", true);
-  ok("Handy-Layout ohne horizontales Scrollen", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  ok("Layout ohne horizontales Scrollen", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
@@ -132,8 +138,8 @@ try {
     downloads.length === IMAGES.length && downloads.every(d => d.suggestedFilename().endsWith(".c2p")),
     downloads.map(d => d.suggestedFilename()).join(", "));
   for (const img of IMAGES) {
-    const d = downloads.find(x => x.suggestedFilename() === img.name.replace(".png", ".c2p"));
-    if (!d) { ok(`${img.name}: .c2p`, false, "nicht heruntergeladen"); continue; }
+    const d = downloads.find(x => x.suggestedFilename() === (img.expect || img.name.replace(".png", ".c2p")));
+    if (!d) { ok(`${img.name}: .c2p`, false, "nicht heruntergeladen als " + (img.expect || img.name.replace(".png", ".c2p"))); continue; }
     const errs = checkC2P(readFileSync(await d.path()), img);
     ok(`${d.suggestedFilename()}: Header, Footer, zlib, Länge, alle ${img.w * img.h} Pixel`, !errs.length, errs.join("; "));
   }
@@ -146,12 +152,12 @@ try {
 
 const failed = results.filter(r => !r.pass).length;
 if (process.env.GITHUB_STEP_SUMMARY) {
-  appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Live-Check ${BASE}\n\n` + results.map(r => `- ${r.pass ? "✅" : "❌"} ${r.name}${r.detail ? ` (${r.detail})` : ""}`).join("\n") + "\n");
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Live-Check ${LABEL}: ${BASE}\n\n` + results.map(r => `- ${r.pass ? "✅" : "❌"} ${r.name}${r.detail ? ` (${r.detail})` : ""}`).join("\n") + "\n");
 }
 console.log(failed ? `\n${failed} Prüfung(en) fehlgeschlagen.` : "\nAlles in Ordnung.");
 if (process.env.GITHUB_ACTIONS) { // als Annotation, damit das Ergebnis direkt am Lauf steht
   const esc = t => t.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
   const lines = results.map(r => `${r.pass ? "OK" : "FEHLER"}  ${r.name}${r.detail ? ` (${r.detail})` : ""}`).join("\n");
-  console.log(`::${failed ? "error" : "notice"} title=Live-Check ${failed ? `${failed} Fehler` : "bestanden"}::${esc(lines)}`);
+  console.log(`::${failed ? "error" : "notice"} title=Live-Check ${LABEL} ${failed ? `${failed} Fehler` : "bestanden"}::${esc(lines)}`);
 }
 process.exit(failed ? 1 : 0);

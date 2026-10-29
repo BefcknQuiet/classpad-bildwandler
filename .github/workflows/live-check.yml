@@ -1,6 +1,7 @@
 name: Live-Check
-# Prüft nach jeder Veröffentlichung die echte Seite auf GitHub Pages wie ein Android-Handy:
+# Prüft nach jeder Veröffentlichung die echte Seite auf GitHub Pages:
 # Dateien online, installierbar, offline, .c2p-Dateien byte-genau.
+# Einmal als Android-Handy (Emulation) und auf Windows mit Edge und mit Chrome.
 on:
   page_build:
   workflow_dispatch:
@@ -8,13 +9,28 @@ permissions:
   contents: read
 jobs:
   live-check:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: "Android (Pixel 7, Chromium)", os: ubuntu-latest, device: "Pixel 7", channel: "" }
+          - { label: "Windows (Edge)", os: windows-latest, device: desktop, channel: msedge }
+          - { label: "Windows (Chrome)", os: windows-latest, device: desktop, channel: chrome }
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
+      # Dateien mit LF auschecken, sonst weichen sie unter Windows von den ausgelieferten ab
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
       - run: npm install --no-save --no-package-lock playwright@1.63.0
-      - run: npx playwright install --with-deps chromium
+      - if: matrix.channel == ''
+        run: npx playwright install --with-deps chromium
       - run: node tests/live-check.mjs https://befcknquiet.github.io/classpad-bildwandler/
+        env:
+          DEVICE: ${{ matrix.device }}
+          BROWSER_CHANNEL: ${{ matrix.channel }}
+          LABEL: ${{ matrix.label }}

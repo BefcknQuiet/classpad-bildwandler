@@ -1,7 +1,7 @@
 // Service Worker: legt die ganze App beim Installieren in den Cache, danach läuft sie offline.
 // Antwortet sofort aus dem Cache und holt im Hintergrund die neue Fassung (gilt ab dem nächsten Start).
 // Bei Änderungen an der Dateiliste VERSION hochzählen.
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = "bildwandler-" + VERSION;
 const FILES = [
   "./",

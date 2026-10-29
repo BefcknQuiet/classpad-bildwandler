@@ -17,7 +17,13 @@ Läuft komplett im Browser, auch offline. Kein Bild wird hochgeladen.
 
 **iPhone (Safari):** Link öffnen → **Teilen** → **Zum Home-Bildschirm**.
 
-**PC:** Link einfach im Browser benutzen, oder in Chrome/Edge über das Installieren-Symbol in der Adressleiste.
+**Windows-PC (Chrome oder Edge):**
+1. Link öffnen.
+2. Oben auf der Seite auf **App installieren** klicken oder rechts in der Adressleiste auf das Installieren-Symbol.
+   In Edge geht es auch über Menü **…** → **Apps** → **Diese Website als App installieren**.
+3. Fertig. Der Bildwandler steht im Startmenü, lässt sich an die Taskleiste anheften und läuft ohne Internet.
+
+Ohne Installation funktioniert die Seite genauso im Browser.
 
 Weitergeben: Auf der Seite unten auf **Link teilen** tippen oder den QR-Code vom eigenen Handy scannen lassen.
 
@@ -30,9 +36,10 @@ Weitergeben: Auf der Seite unten auf **Link teilen** tippen oder den QR-Code vom
 ## Auf den ClassPad bringen
 
 1. ClassPad per USB anschließen und am ClassPad **USB Flash** wählen.
-2. Die `.c2p`-Datei auf das ClassPad-Laufwerk kopieren. Am Android-Handy geht das mit einem
-   OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App.
-3. Laufwerk auswerfen bzw. Kabel trennen.
+2. Die `.c2p`-Datei aus dem Ordner *Downloads* auf das ClassPad-Laufwerk kopieren.
+   - Windows: Das Laufwerk steht im Explorer unter **Dieser PC**.
+   - Android: mit einem OTG-Kabel (USB-C auf Mini-USB) über die Dateien-App.
+3. Laufwerk auswerfen (Windows: im Explorer Rechtsklick → **Auswerfen**), dann das Kabel trennen.
 4. Das Bild z. B. in **Picture Plot** über Datei → Öffnen laden.
 
 Dateinamen am besten kurz und ohne Umlaute; die App wandelt ä, ö, ü und Leerzeichen automatisch um.
@@ -59,7 +66,8 @@ Mit Headless-Chromium, Desktop 1280 px und Pixel-7-Emulation, hell und dunkel:
 - Konsole ohne Fehler und Warnungen, kein horizontales Scrollen am Handy.
 - PWA laut Chrome installierbar, Service Worker cacht alle Dateien, Seite lädt und wandelt offline um.
 - **Live-Check** (`.github/workflows/live-check.yml`, `tests/live-check.mjs`): läuft nach jeder Veröffentlichung auf
-  GitHub und prüft die echte Seite mit Pixel-7-Emulation: alle Dateien online und identisch mit dem Repo,
+  GitHub und prüft die echte Seite dreimal – Android-Emulation (Pixel 7, Chromium), Windows mit Edge und
+  Windows mit Chrome: alle Dateien online und identisch mit dem Repo,
   installierbar, offline nutzbar, „Alle speichern“ liefert einzelne `.c2p`, und deren Header, Footer, zlib-Daten
   und jedes Pixel stimmen. Von Hand: Actions → Live-Check → *Run workflow*, oder lokal
   `npm i playwright && node tests/live-check.mjs <URL>`.
