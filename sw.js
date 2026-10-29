@@ -1,7 +1,7 @@
 // Service Worker: legt die ganze App beim Installieren in den Cache, danach läuft sie offline.
 // Antwortet sofort aus dem Cache und holt im Hintergrund die neue Fassung (gilt ab dem nächsten Start).
 // Bei Änderungen an der Dateiliste VERSION hochzählen.
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = "bildwandler-" + VERSION;
 const FILES = [
   "./",
@@ -20,6 +20,7 @@ const FILES = [
   "icons/icon-512.png",
   "icons/maskable-512.png",
   "icons/apple-touch-icon.png",
+  "icons/qr.svg",
 ];
 
 self.addEventListener("install", e => {
